@@ -1,0 +1,1 @@
+export { ModelLoader } from '@/features/model-loader/ui/model-loader';
