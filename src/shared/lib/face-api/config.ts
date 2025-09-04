@@ -38,10 +38,10 @@ export const FACE_API_CONFIG: FaceApiConfig = {
 
 export const MODEL_NAMES = Object.keys(FACE_API_CONFIG.models) as Array<keyof typeof FACE_API_CONFIG.models>;
 
-export const DEFAULT_MODEL_LOAD_ORDER = [
+export const DEFAULT_MODEL_LOAD_ORDER: string[] = [
   'ssdMobilenetv1',
   'faceLandmark68Net',
   'faceRecognitionNet',
   'faceExpressionNet',
   'ageGenderNet',
-] as const;
+];
