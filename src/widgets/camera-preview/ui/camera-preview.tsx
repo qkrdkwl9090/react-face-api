@@ -7,8 +7,6 @@ interface CameraPreviewProps {
 export function CameraPreview({ className = '' }: CameraPreviewProps) {
   const { videoRef, isActive, isLoading, error, hasPermission } = useCamera();
 
-  console.log('CameraPreview render - isActive:', isActive, 'isLoading:', isLoading, 'error:', error);
-
   return (
     <div className={`relative ${className}`}>
       <div className="relative aspect-video rounded-2xl overflow-hidden border border-slate-600/40" style={{minHeight: '400px'}}>
@@ -28,10 +26,6 @@ export function CameraPreview({ className = '' }: CameraPreviewProps) {
               objectFit: 'cover',
               zIndex: 10
             }}
-            onLoadedMetadata={() => console.log('Video metadata loaded in component')}
-            onPlay={() => console.log('Video playing in component')}
-            onError={(e) => console.error('Video error in component:', e)}
-            onCanPlay={() => console.log('Video can play')}
           />
         )}
         

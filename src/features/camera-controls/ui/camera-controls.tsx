@@ -1,18 +1,7 @@
-import { Button } from '@/shared/ui/components';
 import { useCamera } from '@/shared/lib/hooks';
 
 export function CameraControls() {
-  const { isActive, isLoading, error, startCamera, stopCamera, devices, selectedDeviceId, selectDevice } = useCamera();
-
-  const handleToggleCamera = async () => {
-    if (isActive) {
-      stopCamera();
-    } else {
-      if (selectedDeviceId) {
-        await startCamera(selectedDeviceId);
-      }
-    }
-  };
+  const { isActive, isLoading, error, devices, selectedDeviceId, selectDevice } = useCamera();
 
   return (
     <div className="space-y-4">
@@ -54,22 +43,6 @@ export function CameraControls() {
           </div>
         </div>
       )}
-      
-      {/* 컨트롤 버튼 */}
-      <div className="flex flex-wrap gap-3">
-        <Button 
-          size="md" 
-          onClick={handleToggleCamera}
-          disabled={isLoading}
-          className={isActive ? 'bg-red-600 hover:bg-red-700' : ''}
-        >
-          {isLoading ? '연결 중...' : isActive ? '카메라 정지' : '카메라 시작'}
-        </Button>
-        
-        <Button variant="secondary" size="md" disabled={isLoading}>
-          설정
-        </Button>
-      </div>
 
       {error && (
         <div className="w-full mt-2 p-3 bg-red-900/20 border border-red-700/30 rounded-lg">

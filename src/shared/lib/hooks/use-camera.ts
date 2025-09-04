@@ -18,7 +18,6 @@ interface CameraState {
 interface CameraHook extends CameraState {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   startCamera: (deviceId?: string) => Promise<void>;
-  stopCamera: () => void;
   captureImage: () => string | null;
   requestPermission: () => Promise<void>;
   selectDevice: (deviceId: string) => Promise<void>;
@@ -39,14 +38,11 @@ export function useCamera(): CameraHook {
 
   const requestPermission = useCallback(async () => {
     try {
-      // First request permission by getting a temporary stream
       const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      // Immediately stop the temporary stream
       tempStream.getTracks().forEach(track => track.stop());
       
       setState(prev => ({ ...prev, hasPermission: true, error: null }));
       
-      // Now get available devices (labels will be available after permission)
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices
         .filter(device => device.kind === 'videoinput')
@@ -55,8 +51,6 @@ export function useCamera(): CameraHook {
           label: device.label || `카메라 ${device.deviceId.substring(0, 8)}`
         }));
       
-      console.log('Available cameras:', videoDevices);
-      
       setState(prev => ({ 
         ...prev, 
         devices: videoDevices,
@@ -64,33 +58,30 @@ export function useCamera(): CameraHook {
       }));
       
     } catch (error) {
-      console.error('Camera permission error:', error);
       const errorMessage = error instanceof Error ? error.message : '카메라 권한이 필요합니다';
       setState(prev => ({ ...prev, error: errorMessage, hasPermission: false }));
     }
   }, []);
 
   const startCamera = useCallback(async (deviceId?: string) => {
-    console.log('Starting camera with deviceId:', deviceId);
-    
-    if (state.isActive || state.isLoading) {
-      console.log('Camera already active or loading');
+    const targetDeviceId = deviceId || state.selectedDeviceId;
+    if (!targetDeviceId) {
       return;
     }
 
-    const targetDeviceId = deviceId || state.selectedDeviceId;
-    if (!targetDeviceId) {
-      console.log('No device ID available');
+    if (state.isLoading) {
       return;
     }
 
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Stop existing stream first
-      if (state.stream) {
-        state.stream.getTracks().forEach(track => track.stop());
-      }
+      setState(prev => {
+        if (prev.stream) {
+          prev.stream.getTracks().forEach(track => track.stop());
+        }
+        return { ...prev, stream: null };
+      });
 
       const constraints: MediaStreamConstraints = {
         video: {
@@ -101,11 +92,8 @@ export function useCamera(): CameraHook {
         audio: false
       };
 
-      console.log('Getting user media with constraints:', constraints);
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('Got stream:', stream);
 
-      // Update state first to show video element
       setState(prev => ({
         ...prev,
         isActive: true,
@@ -114,27 +102,7 @@ export function useCamera(): CameraHook {
         stream,
         selectedDeviceId: targetDeviceId
       }));
-
-      // Then set the video source after state update
-      setTimeout(() => {
-        if (videoRef.current && stream) {
-          videoRef.current.srcObject = stream;
-          console.log('Set video srcObject');
-          
-          videoRef.current.onloadedmetadata = () => {
-            console.log('Video metadata loaded, attempting to play');
-            if (videoRef.current) {
-              videoRef.current.play().catch(playError => {
-                console.error('Video play error:', playError);
-              });
-            }
-          };
-        }
-      }, 100);
-      
-      console.log('Camera started successfully');
     } catch (error) {
-      console.error('Camera start error:', error);
       const errorMessage = error instanceof Error ? error.message : '카메라 시작에 실패했습니다';
       setState(prev => ({
         ...prev,
@@ -146,31 +114,26 @@ export function useCamera(): CameraHook {
     }
   }, [state.isActive, state.isLoading, state.selectedDeviceId, state.stream]);
 
-  const stopCamera = useCallback(() => {
-    if (state.stream) {
-      state.stream.getTracks().forEach(track => track.stop());
-    }
-
+  const selectDevice = useCallback(async (deviceId: string) => {
+    setState(prev => {
+      if (prev.stream) {
+        prev.stream.getTracks().forEach(track => track.stop());
+      }
+      
+      return { 
+        ...prev, 
+        selectedDeviceId: deviceId,
+        stream: null,
+        isActive: false
+      };
+    });
+    
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-
-    setState(prev => ({
-      ...prev,
-      isActive: false,
-      isLoading: false,
-      error: null,
-      stream: null
-    }));
-  }, [state.stream]);
-
-  const selectDevice = useCallback(async (deviceId: string) => {
-    setState(prev => ({ ...prev, selectedDeviceId: deviceId }));
     
-    if (state.isActive) {
-      await startCamera(deviceId);
-    }
-  }, [state.isActive, startCamera]);
+    await startCamera(deviceId);
+  }, [startCamera]);
 
   const captureImage = useCallback((): string | null => {
     if (!videoRef.current || !state.isActive) return null;
@@ -188,23 +151,42 @@ export function useCamera(): CameraHook {
     return canvas.toDataURL('image/jpeg', 0.8);
   }, [state.isActive]);
 
-  // Auto-request permission on mount
   useEffect(() => {
     requestPermission();
   }, [requestPermission]);
 
-  // Auto-start camera with first device when permission granted
   useEffect(() => {
     if (state.hasPermission && state.selectedDeviceId && !state.isActive && !state.isLoading) {
       startCamera(state.selectedDeviceId);
     }
   }, [state.hasPermission, state.selectedDeviceId, state.isActive, state.isLoading, startCamera]);
 
+  useEffect(() => {
+    if (state.isActive && state.stream && videoRef.current) {
+      videoRef.current.srcObject = null;
+      
+      setTimeout(() => {
+        if (videoRef.current && state.stream) {
+          videoRef.current.srcObject = state.stream;
+          
+          videoRef.current.onloadedmetadata = () => {
+            if (videoRef.current) {
+              videoRef.current.play().catch(() => {});
+            }
+          };
+          
+          if (videoRef.current.readyState >= 3) {
+            videoRef.current.play().catch(() => {});
+          }
+        }
+      }, 10);
+    }
+  }, [state.isActive, state.stream?.id]);
+
   return {
     ...state,
     videoRef,
     startCamera,
-    stopCamera,
     captureImage,
     requestPermission,
     selectDevice,
