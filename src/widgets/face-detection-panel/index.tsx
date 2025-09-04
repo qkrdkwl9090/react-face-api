@@ -1,4 +1,7 @@
-import { Card, CardHeader, CardContent, Button } from '@/shared/ui/components';
+import { Card, CardHeader, CardContent } from '@/shared/ui/components';
+import { CameraPreview } from '@/widgets/camera-preview';
+import { CameraControls } from '@/features/camera-controls';
+import { ModelLoader } from '@/features/model-loader';
 
 export function FaceDetectionPanel() {
   const features = [
@@ -16,32 +19,10 @@ export function FaceDetectionPanel() {
           {/* 카메라 영역 */}
           <div className="xl:col-span-2 space-y-6">
             {/* 카메라 프리뷰 */}
-            <div className="relative">
-              <div className="camera-preview aspect-video flex items-center justify-center p-12">
-                <div className="text-center space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-blue-500/20 rounded-xl flex items-center justify-center border border-blue-500/30">
-                    <div className="w-8 h-8 bg-blue-400/30 rounded"></div>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-medium text-white mb-2">카메라 대기 중</h3>
-                    <p className="text-slate-400 text-sm">카메라를 시작하여 실시간 얼굴 분석을 체험해보세요</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Status Indicator */}
-              <div className="absolute top-4 left-4 flex items-center space-x-2 bg-slate-800/70 backdrop-blur-sm rounded-full px-3 py-2">
-                <div className="status-dot bg-yellow-400"></div>
-                <span className="text-sm text-white font-medium">대기 중</span>
-              </div>
-            </div>
+            <CameraPreview />
 
             {/* Controls */}
-            <div className="flex flex-wrap gap-3">
-              <Button size="md">카메라 시작</Button>
-              <Button variant="secondary" size="md">설정</Button>
-              <Button variant="outline" size="md">이미지 업로드</Button>
-            </div>
+            <CameraControls />
           </div>
 
           {/* 사이드 패널 */}
@@ -71,6 +52,9 @@ export function FaceDetectionPanel() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* 모델 로더 */}
+            <ModelLoader />
 
             {/* 기능 목록 */}
             <Card className="bg-gradient-to-br from-slate-800/40 to-slate-900/60">

@@ -1,0 +1,1 @@
+export { CameraPreview } from '@/widgets/camera-preview/ui/camera-preview';

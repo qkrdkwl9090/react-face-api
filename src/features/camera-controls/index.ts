@@ -1,0 +1,1 @@
+export { CameraControls } from '@/features/camera-controls/ui/camera-controls';
