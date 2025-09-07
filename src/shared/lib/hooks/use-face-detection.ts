@@ -31,13 +31,17 @@ export function useFaceDetection(): UseFaceDetectionReturn {
       canvasRef.current.style.position = 'absolute';
       canvasRef.current.style.top = '0';
       canvasRef.current.style.left = '0';
+      canvasRef.current.style.width = '100%';
+      canvasRef.current.style.height = '100%';
       canvasRef.current.style.pointerEvents = 'none';
       canvasRef.current.style.zIndex = '10';
     }
 
     const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    
+    // 비디오 실제 크기에 맞춰 캔버스 해상도 설정
+    canvas.width = video.videoWidth || video.clientWidth;
+    canvas.height = video.videoHeight || video.clientHeight;
 
     // 캔버스를 비디오 부모 요소에 추가
     const videoParent = video.parentElement;

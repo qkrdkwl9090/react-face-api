@@ -49,9 +49,8 @@ class FaceDetectionServiceImpl implements FaceDetectionService {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
-        // 비디오 프레임을 캔버스에 그리기
+        // 캔버스 초기화 (투명하게)
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         // Face API 옵션 설정
         const detectionOptions = new faceapi.SsdMobilenetv1Options({
