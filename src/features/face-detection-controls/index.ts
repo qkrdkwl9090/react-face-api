@@ -1,0 +1,1 @@
+export { FaceDetectionControls } from '@/features/face-detection-controls/ui/face-detection-controls';

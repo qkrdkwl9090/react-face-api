@@ -1,0 +1,1 @@
+export { EmotionDisplay } from '@/widgets/emotion-display/ui/emotion-display';

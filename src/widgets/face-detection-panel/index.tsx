@@ -1,16 +1,22 @@
 import { Card, CardHeader, CardContent } from '@/shared/ui/components';
 import { CameraPreview } from '@/widgets/camera-preview';
 import { CameraControls } from '@/features/camera-controls';
+import { FaceDetectionControls } from '@/features/face-detection-controls';
 import { ModelLoader } from '@/features/model-loader';
+import { EmotionDisplay } from '@/widgets/emotion-display';
+import { AgeGenderDisplay } from '@/widgets/age-gender-display';
+import { useFaceFeatures, useCamera, useFaceResults } from '@/shared/lib/hooks';
+import { useCallback } from 'react';
 
 export function FaceDetectionPanel() {
-  const features = [
-    { name: '실시간 얼굴 감지', status: 'ready' },
-    { name: '얼굴 특징점 (68점)', status: 'ready' },
-    { name: '감정 인식', status: 'ready' },
-    { name: '나이/성별 추정', status: 'ready' },
-    { name: '얼굴 등록/매칭', status: 'ready' }
-  ];
+  const { features, toggleFeature, enabledFeatures } = useFaceFeatures();
+  const { videoRef, isActive } = useCamera();
+  const { detectedCount, latestEmotion, latestAgeGender } = useFaceResults();
+
+  // 기능 클릭 핸들러 - 메모이제이션으로 리렌더링 최적화
+  const handleFeatureClick = useCallback((featureId: string) => {
+    toggleFeature(featureId);
+  }, [toggleFeature]);
 
   return (
     <Card className="overflow-hidden">
@@ -23,6 +29,19 @@ export function FaceDetectionPanel() {
 
             {/* Controls */}
             <CameraControls />
+            
+            {/* Face Detection Controls */}
+            <FaceDetectionControls 
+              videoElement={videoRef.current} 
+              isVideoActive={isActive}
+              detectionOptions={{
+                detectLandmarks: enabledFeatures.landmarks,
+                detectExpressions: enabledFeatures.expressions,
+                detectAgeGender: enabledFeatures.ageGender,
+                extractDescriptor: enabledFeatures.faceRecognition,
+                minConfidence: 0.5,
+              }}
+            />
           </div>
 
           {/* 사이드 패널 */}
@@ -32,26 +51,28 @@ export function FaceDetectionPanel() {
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-white">실시간 분석</h3>
-                  <div className="status-dot bg-gray-400"></div>
+                  <div className={`status-dot ${detectedCount > 0 ? 'bg-green-400' : 'bg-gray-400'}`}></div>
                 </div>
               </CardHeader>
               <CardContent className="pt-0 space-y-4">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-300 text-sm">감지된 얼굴</span>
-                    <span className="text-2xl font-bold text-white">0</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300 text-sm">처리 속도</span>
-                    <span className="text-sm text-slate-400">- fps</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300 text-sm">정확도</span>
-                    <span className="text-sm text-slate-400">--%</span>
+                    <span className="text-2xl font-bold text-white">{detectedCount}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* 감정 분석 결과 */}
+            {enabledFeatures.expressions && (
+              <EmotionDisplay emotions={latestEmotion} />
+            )}
+
+            {/* 나이/성별 분석 결과 */}
+            {enabledFeatures.ageGender && (
+              <AgeGenderDisplay ageGender={latestAgeGender} />
+            )}
 
             {/* 모델 로더 */}
             <ModelLoader />
@@ -61,14 +82,42 @@ export function FaceDetectionPanel() {
               <CardHeader>
                 <h3 className="text-lg font-semibold text-white">사용 가능한 기능</h3>
               </CardHeader>
-              <CardContent className="space-y-1">
-                {features.map((feature, index) => (
-                  <div key={index} className="feature-item">
-                    <div className="flex-1">
-                      <span className="text-slate-200 text-sm font-medium">{feature.name}</span>
+              <CardContent className="space-y-2">
+                {features.map((feature) => (
+                  <button
+                    key={feature.id}
+                    onClick={() => handleFeatureClick(feature.id)}
+                    disabled={!feature.isAvailable}
+                    className={`w-full p-3 rounded-lg border transition-all text-left ${
+                      feature.isEnabled
+                        ? 'bg-blue-600/20 border-blue-500/50 hover:bg-blue-600/30'
+                        : 'bg-slate-700/30 border-slate-600/40 hover:bg-slate-700/50'
+                    } ${
+                      feature.isAvailable 
+                        ? 'cursor-pointer' 
+                        : 'cursor-not-allowed opacity-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm font-medium ${
+                        feature.isEnabled ? 'text-blue-200' : 'text-slate-300'
+                      }`}>
+                        {feature.name}
+                      </span>
+                      <div className={`w-2 h-2 rounded-full ${
+                        feature.isEnabled
+                          ? 'bg-blue-400'
+                          : feature.isAvailable
+                          ? 'bg-slate-400'
+                          : 'bg-gray-500'
+                      }`} />
                     </div>
-                    <div className="status-dot bg-green-400"></div>
-                  </div>
+                    {feature.isEnabled && (
+                      <div className="mt-1 text-xs text-blue-300">
+                        활성화됨
+                      </div>
+                    )}
+                  </button>
                 ))}
               </CardContent>
             </Card>

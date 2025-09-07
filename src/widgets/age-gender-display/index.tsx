@@ -1,0 +1,1 @@
+export { AgeGenderDisplay } from '@/widgets/age-gender-display/ui/age-gender-display';

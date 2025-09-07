@@ -45,6 +45,13 @@ export function useFaceApi(): UseFaceApiHook {
 
   useEffect(() => {
     updateLoadingState();
+    
+    // 주기적으로 모델 상태 확인 (모델이 로딩 중이거나 완료되지 않았을 때)
+    const interval = setInterval(() => {
+      updateLoadingState();
+    }, 500);
+    
+    return () => clearInterval(interval);
   }, [updateLoadingState]);
 
   return {
