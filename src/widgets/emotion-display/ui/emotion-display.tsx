@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 
 interface EmotionData {
   neutral: number;
@@ -26,7 +26,7 @@ const emotionConfig = {
   surprised: { label: '놀람', color: 'bg-orange-500', textColor: 'text-orange-300' },
 } as const;
 
-export function EmotionDisplay({ emotions, className = '' }: EmotionDisplayProps) {
+function EmotionDisplayComponent({ emotions, className = '' }: EmotionDisplayProps) {
   // 감정 데이터를 확률 순으로 정렬
   const sortedEmotions = useMemo(() => {
     if (!emotions) return [];
@@ -92,3 +92,5 @@ export function EmotionDisplay({ emotions, className = '' }: EmotionDisplayProps
     </div>
   );
 }
+
+export const EmotionDisplay = memo(EmotionDisplayComponent);

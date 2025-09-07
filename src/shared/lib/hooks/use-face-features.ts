@@ -73,7 +73,6 @@ export function useFaceFeatures(): UseFaceFeaturesReturn {
 
   // 기능 선택 함수 - 하나만 선택 가능
   const selectFeature = useCallback((featureId: FeatureType) => {
-    console.log('🎛️ Feature Selected:', featureId);
     setSelectedFeature(featureId);
     
     // 실시간 감지는 항상 켜져있고, 추가 기능만 선택적으로 활성화
@@ -85,7 +84,6 @@ export function useFaceFeatures(): UseFaceFeaturesReturn {
       faceRecognition: featureId === 'faceRecognition',
     };
     
-    console.log('📊 New enabled features:', newState);
     setEnabledFeatures(newState);
   }, []);
 

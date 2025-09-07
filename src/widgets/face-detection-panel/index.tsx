@@ -10,7 +10,7 @@ import { useCallback, useEffect } from 'react';
 
 export function FaceDetectionPanel() {
   const { features, selectedFeature, selectFeature, enabledFeatures } = useFaceFeatures();
-  const { videoRef, isActive } = useCamera();
+  const { isActive } = useCamera();
   const { detectedCount, latestEmotion, latestAgeGender } = useFaceResults();
   const { startDetection, stopDetection, isDetecting } = useFaceDetection();
   const { isLoading: modelsLoading } = useFaceApi();
@@ -18,28 +18,15 @@ export function FaceDetectionPanel() {
   // 기능 선택 핸들러 - 메모이제이션으로 리렌더링 최적화
   const handleFeatureSelect = useCallback((featureId: string) => {
     selectFeature(featureId as keyof typeof enabledFeatures);
-  }, [selectFeature, enabledFeatures]);
+  }, [selectFeature]);
 
   // 자동 감지 시작 로직
   useEffect(() => {
     // 어떤 기능이든 활성화되어 있고 카메라가 활성화되어 있으면 감지 시작
     const hasActiveFeature = Object.values(enabledFeatures).some(feature => feature);
     
-    const videoElement = document.querySelector('video');
-    
-    console.log('🔍 Auto Detection Check:', {
-      isActive,
-      modelsLoading,
-      hasVideoElement: !!videoElement,
-      isDetecting,
-      hasActiveFeature,
-      enabledFeatures,
-      selectedFeature
-    });
-    
     if (isActive && !modelsLoading && !isDetecting && hasActiveFeature) {
       const video = document.querySelector('video') as HTMLVideoElement;
-      console.log('🎯 Starting detection with video:', !!video);
       
       if (video) {
         const options = {
@@ -50,7 +37,6 @@ export function FaceDetectionPanel() {
           minConfidence: 0.5,
         };
         
-        console.log('🔧 Detection options:', options);
         startDetection(video, options);
       }
     }

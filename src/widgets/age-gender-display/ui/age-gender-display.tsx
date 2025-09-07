@@ -1,3 +1,5 @@
+import { memo, useMemo } from 'react';
+
 interface AgeGenderData {
   age: number;
   gender: string;
@@ -9,7 +11,7 @@ interface AgeGenderDisplayProps {
   className?: string;
 }
 
-export function AgeGenderDisplay({ ageGender, className = '' }: AgeGenderDisplayProps) {
+function AgeGenderDisplayComponent({ ageGender, className = '' }: AgeGenderDisplayProps) {
   if (!ageGender) {
     return (
       <div className={`glass-card p-4 ${className}`}>
@@ -20,11 +22,27 @@ export function AgeGenderDisplay({ ageGender, className = '' }: AgeGenderDisplay
     );
   }
 
-  const { age, gender, genderProbability } = ageGender;
-  const genderLabel = gender === 'male' ? '남성' : '여성';
-  const genderColor = gender === 'male' ? 'text-blue-300' : 'text-pink-300';
-  const confidenceColor = genderProbability > 0.8 ? 'text-green-300' : 
-                         genderProbability > 0.6 ? 'text-yellow-300' : 'text-red-300';
+  const displayData = useMemo(() => {
+    if (!ageGender) return null;
+    
+    const { age, gender, genderProbability } = ageGender;
+    const genderLabel = gender === 'male' ? '남성' : '여성';
+    const genderColor = gender === 'male' ? 'text-blue-300' : 'text-pink-300';
+    const confidenceColor = genderProbability > 0.8 ? 'text-green-300' : 
+                           genderProbability > 0.6 ? 'text-yellow-300' : 'text-red-300';
+    const barColor = genderProbability > 0.8 ? 'bg-green-500' :
+                     genderProbability > 0.6 ? 'bg-yellow-500' : 'bg-red-500';
+    
+    return {
+      age: Math.round(age),
+      genderLabel,
+      genderColor,
+      confidenceColor,
+      barColor,
+      confidence: (genderProbability * 100).toFixed(1),
+      confidenceWidth: genderProbability * 100
+    };
+  }, [ageGender]);
 
   return (
     <div className={`glass-card p-4 ${className}`}>
@@ -33,31 +51,28 @@ export function AgeGenderDisplay({ ageGender, className = '' }: AgeGenderDisplay
         <div className="text-center pb-3 border-b border-slate-600/30">
           <div className="text-lg font-semibold text-white mb-1">추정 나이</div>
           <div className="text-2xl font-bold text-blue-300">
-            {Math.round(age)}세
+            {displayData?.age}세
           </div>
         </div>
 
         {/* 성별 표시 */}
         <div className="text-center">
           <div className="text-sm text-slate-400 mb-2">추정 성별</div>
-          <div className={`text-xl font-semibold ${genderColor} mb-2`}>
-            {genderLabel}
+          <div className={`text-xl font-semibold ${displayData?.genderColor} mb-2`}>
+            {displayData?.genderLabel}
           </div>
           <div className="flex items-center justify-center space-x-2">
             <span className="text-xs text-slate-400">신뢰도:</span>
-            <span className={`text-xs font-medium ${confidenceColor}`}>
-              {(genderProbability * 100).toFixed(1)}%
+            <span className={`text-xs font-medium ${displayData?.confidenceColor}`}>
+              {displayData?.confidence}%
             </span>
           </div>
           
           {/* 신뢰도 바 */}
           <div className="w-full bg-slate-700/50 rounded-full h-2 mt-2 overflow-hidden">
             <div 
-              className={`h-full transition-all duration-300 ${
-                genderProbability > 0.8 ? 'bg-green-500' :
-                genderProbability > 0.6 ? 'bg-yellow-500' : 'bg-red-500'
-              }`}
-              style={{ width: `${genderProbability * 100}%` }}
+              className={`h-full transition-all duration-300 ${displayData?.barColor}`}
+              style={{ width: `${displayData?.confidenceWidth}%` }}
             />
           </div>
         </div>
@@ -65,3 +80,5 @@ export function AgeGenderDisplay({ ageGender, className = '' }: AgeGenderDisplay
     </div>
   );
 }
+
+export const AgeGenderDisplay = memo(AgeGenderDisplayComponent);

@@ -1,10 +1,11 @@
 import { useCamera } from '@/shared/lib/hooks';
+import { memo } from 'react';
 
 interface CameraPreviewProps {
   className?: string;
 }
 
-export function CameraPreview({ className = '' }: CameraPreviewProps) {
+function CameraPreviewComponent({ className = '' }: CameraPreviewProps) {
   const { videoRef, isActive, isLoading, error, hasPermission } = useCamera();
 
   return (
@@ -62,3 +63,5 @@ export function CameraPreview({ className = '' }: CameraPreviewProps) {
     </div>
   );
 }
+
+export const CameraPreview = memo(CameraPreviewComponent);

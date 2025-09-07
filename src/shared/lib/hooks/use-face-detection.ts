@@ -69,21 +69,14 @@ export function useFaceDetection(): UseFaceDetectionReturn {
   ) => {
     try {
       setError(null);
-      console.log('🚀 StartDetection called with options:', options);
       
-      const modelsLoaded = faceDetectionService.isModelsLoaded();
-      console.log('🤖 Models loaded:', modelsLoaded);
-      
-      if (!modelsLoaded) {
+      if (!faceDetectionService.isModelsLoaded()) {
         throw new Error('필요한 모델들이 로드되지 않았습니다.');
       }
 
       const canvas = createCanvas(video);
-      console.log('🎨 Canvas created:', !!canvas);
-      
       faceDetectionService.startDetection(video, canvas, options);
       setIsDetecting(true);
-      console.log('✅ Detection started successfully');
 
       // 통계 업데이트 시작 (100ms마다)
       if (statsUpdateIntervalRef.current) {

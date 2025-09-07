@@ -1,9 +1,9 @@
 import { Card, CardHeader, CardContent, Button } from '@/shared/ui/components';
 import { useFaceRecognition, useFaceResults } from '@/shared/lib/hooks';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, memo } from 'react';
 import type { FaceMatch, FaceDetectionResult } from '@/shared/lib/face-api/types';
 
-export function FaceRecognition() {
+function FaceRecognitionComponent() {
   const { 
     registeredFaces, 
     registerFace, 
@@ -220,3 +220,5 @@ export function FaceRecognition() {
     </Card>
   );
 }
+
+export const FaceRecognition = memo(FaceRecognitionComponent);
