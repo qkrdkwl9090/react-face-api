@@ -15,8 +15,10 @@ export interface FaceFeaturesState {
   faceRecognition: boolean;
 }
 
+export type FeatureType = keyof FaceFeaturesState | 'none';
+
 const INITIAL_FEATURES_STATE: FaceFeaturesState = {
-  realTimeDetection: false,
+  realTimeDetection: true, // 기본값으로 설정
   landmarks: false,
   expressions: false,
   ageGender: false,
@@ -26,12 +28,14 @@ const INITIAL_FEATURES_STATE: FaceFeaturesState = {
 interface UseFaceFeaturesReturn {
   features: FaceFeature[];
   enabledFeatures: FaceFeaturesState;
-  toggleFeature: (featureId: string) => void;
+  selectedFeature: FeatureType;
+  selectFeature: (featureId: FeatureType) => void;
   resetFeatures: () => void;
 }
 
 export function useFaceFeatures(): UseFaceFeaturesReturn {
   const [enabledFeatures, setEnabledFeatures] = useState<FaceFeaturesState>(INITIAL_FEATURES_STATE);
+  const [selectedFeature, setSelectedFeature] = useState<FeatureType>('realTimeDetection');
 
   // 기능 목록을 메모이제이션하여 불필요한 리렌더링 방지
   const features = useMemo<FaceFeature[]>(() => [
@@ -67,23 +71,35 @@ export function useFaceFeatures(): UseFaceFeaturesReturn {
     },
   ], [enabledFeatures]);
 
-  // 기능 토글 함수 - 콜백으로 메모이제이션
-  const toggleFeature = useCallback((featureId: string) => {
-    setEnabledFeatures(prev => ({
-      ...prev,
-      [featureId]: !prev[featureId as keyof FaceFeaturesState],
-    }));
+  // 기능 선택 함수 - 하나만 선택 가능
+  const selectFeature = useCallback((featureId: FeatureType) => {
+    console.log('🎛️ Feature Selected:', featureId);
+    setSelectedFeature(featureId);
+    
+    // 실시간 감지는 항상 켜져있고, 추가 기능만 선택적으로 활성화
+    const newState: FaceFeaturesState = {
+      realTimeDetection: true, // 기본 감지는 항상 활성화
+      landmarks: featureId === 'landmarks',
+      expressions: featureId === 'expressions', 
+      ageGender: featureId === 'ageGender',
+      faceRecognition: featureId === 'faceRecognition',
+    };
+    
+    console.log('📊 New enabled features:', newState);
+    setEnabledFeatures(newState);
   }, []);
 
   // 모든 기능 리셋
   const resetFeatures = useCallback(() => {
+    setSelectedFeature('realTimeDetection');
     setEnabledFeatures(INITIAL_FEATURES_STATE);
   }, []);
 
   return {
     features,
     enabledFeatures,
-    toggleFeature,
+    selectedFeature,
+    selectFeature,
     resetFeatures,
   };
 }

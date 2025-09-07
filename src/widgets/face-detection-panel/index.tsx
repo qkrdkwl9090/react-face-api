@@ -1,22 +1,87 @@
 import { Card, CardHeader, CardContent } from '@/shared/ui/components';
 import { CameraPreview } from '@/widgets/camera-preview';
 import { CameraControls } from '@/features/camera-controls';
-import { FaceDetectionControls } from '@/features/face-detection-controls';
 import { ModelLoader } from '@/features/model-loader';
 import { EmotionDisplay } from '@/widgets/emotion-display';
 import { AgeGenderDisplay } from '@/widgets/age-gender-display';
-import { useFaceFeatures, useCamera, useFaceResults } from '@/shared/lib/hooks';
-import { useCallback } from 'react';
+import { FaceRecognition } from '@/widgets/face-recognition';
+import { useFaceFeatures, useCamera, useFaceResults, useFaceDetection, useFaceApi } from '@/shared/lib/hooks';
+import { useCallback, useEffect } from 'react';
 
 export function FaceDetectionPanel() {
-  const { features, toggleFeature, enabledFeatures } = useFaceFeatures();
+  const { features, selectedFeature, selectFeature, enabledFeatures } = useFaceFeatures();
   const { videoRef, isActive } = useCamera();
   const { detectedCount, latestEmotion, latestAgeGender } = useFaceResults();
+  const { startDetection, stopDetection, isDetecting } = useFaceDetection();
+  const { isLoading: modelsLoading } = useFaceApi();
 
-  // 기능 클릭 핸들러 - 메모이제이션으로 리렌더링 최적화
-  const handleFeatureClick = useCallback((featureId: string) => {
-    toggleFeature(featureId);
-  }, [toggleFeature]);
+  // 기능 선택 핸들러 - 메모이제이션으로 리렌더링 최적화
+  const handleFeatureSelect = useCallback((featureId: string) => {
+    selectFeature(featureId as keyof typeof enabledFeatures);
+  }, [selectFeature, enabledFeatures]);
+
+  // 자동 감지 시작 로직
+  useEffect(() => {
+    // 어떤 기능이든 활성화되어 있고 카메라가 활성화되어 있으면 감지 시작
+    const hasActiveFeature = Object.values(enabledFeatures).some(feature => feature);
+    
+    const videoElement = document.querySelector('video');
+    
+    console.log('🔍 Auto Detection Check:', {
+      isActive,
+      modelsLoading,
+      hasVideoElement: !!videoElement,
+      isDetecting,
+      hasActiveFeature,
+      enabledFeatures,
+      selectedFeature
+    });
+    
+    if (isActive && !modelsLoading && !isDetecting && hasActiveFeature) {
+      const video = document.querySelector('video') as HTMLVideoElement;
+      console.log('🎯 Starting detection with video:', !!video);
+      
+      if (video) {
+        const options = {
+          detectLandmarks: enabledFeatures.landmarks,
+          detectExpressions: enabledFeatures.expressions,
+          detectAgeGender: enabledFeatures.ageGender,
+          extractDescriptor: enabledFeatures.faceRecognition,
+          minConfidence: 0.5,
+        };
+        
+        console.log('🔧 Detection options:', options);
+        startDetection(video, options);
+      }
+    }
+  }, [isActive, modelsLoading, isDetecting, startDetection, enabledFeatures, selectedFeature]);
+
+  // 기능 변경시 감지 재시작
+  useEffect(() => {
+    const hasActiveFeature = Object.values(enabledFeatures).some(feature => feature);
+    
+    if (isDetecting && isActive && !modelsLoading) {
+      stopDetection();
+      
+      // 활성화된 기능이 있으면 재시작
+      if (hasActiveFeature) {
+        setTimeout(() => {
+          const video = document.querySelector('video') as HTMLVideoElement;
+          if (video) {
+            const options = {
+              detectLandmarks: enabledFeatures.landmarks,
+              detectExpressions: enabledFeatures.expressions,
+              detectAgeGender: enabledFeatures.ageGender,
+              extractDescriptor: enabledFeatures.faceRecognition,
+              minConfidence: 0.5,
+            };
+            
+            startDetection(video, options);
+          }
+        }, 100);
+      }
+    }
+  }, [enabledFeatures, isDetecting, isActive, modelsLoading, stopDetection, startDetection]);
 
   return (
     <Card className="overflow-hidden">
@@ -29,19 +94,6 @@ export function FaceDetectionPanel() {
 
             {/* Controls */}
             <CameraControls />
-            
-            {/* Face Detection Controls */}
-            <FaceDetectionControls 
-              videoElement={videoRef.current} 
-              isVideoActive={isActive}
-              detectionOptions={{
-                detectLandmarks: enabledFeatures.landmarks,
-                detectExpressions: enabledFeatures.expressions,
-                detectAgeGender: enabledFeatures.ageGender,
-                extractDescriptor: enabledFeatures.faceRecognition,
-                minConfidence: 0.5,
-              }}
-            />
           </div>
 
           {/* 사이드 패널 */}
@@ -74,50 +126,55 @@ export function FaceDetectionPanel() {
               <AgeGenderDisplay ageGender={latestAgeGender} />
             )}
 
+            {/* 얼굴 등록/매칭 결과 */}
+            {enabledFeatures.faceRecognition && (
+              <FaceRecognition />
+            )}
+
             {/* 모델 로더 */}
             <ModelLoader />
 
             {/* 기능 목록 */}
             <Card className="bg-gradient-to-br from-slate-800/40 to-slate-900/60">
               <CardHeader>
-                <h3 className="text-lg font-semibold text-white">사용 가능한 기능</h3>
+                <h3 className="text-lg font-semibold text-white">분석 모드 선택</h3>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-3">
                 {features.map((feature) => (
-                  <button
+                  <label
                     key={feature.id}
-                    onClick={() => handleFeatureClick(feature.id)}
-                    disabled={!feature.isAvailable}
-                    className={`w-full p-3 rounded-lg border transition-all text-left ${
-                      feature.isEnabled
-                        ? 'bg-blue-600/20 border-blue-500/50 hover:bg-blue-600/30'
+                    className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
+                      selectedFeature === feature.id
+                        ? 'bg-blue-600/20 border-blue-500/50'
                         : 'bg-slate-700/30 border-slate-600/40 hover:bg-slate-700/50'
                     } ${
-                      feature.isAvailable 
-                        ? 'cursor-pointer' 
-                        : 'cursor-not-allowed opacity-50'
+                      !feature.isAvailable && 'cursor-not-allowed opacity-50'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className={`text-sm font-medium ${
-                        feature.isEnabled ? 'text-blue-200' : 'text-slate-300'
-                      }`}>
-                        {feature.name}
-                      </span>
-                      <div className={`w-2 h-2 rounded-full ${
-                        feature.isEnabled
-                          ? 'bg-blue-400'
-                          : feature.isAvailable
-                          ? 'bg-slate-400'
-                          : 'bg-gray-500'
-                      }`} />
+                    <input
+                      type="radio"
+                      name="faceAnalysisMode"
+                      value={feature.id}
+                      checked={selectedFeature === feature.id}
+                      onChange={() => handleFeatureSelect(feature.id)}
+                      disabled={!feature.isAvailable}
+                      className="sr-only"
+                    />
+                    <div className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
+                      selectedFeature === feature.id
+                        ? 'border-blue-400 bg-blue-400'
+                        : 'border-slate-400'
+                    }`}>
+                      {selectedFeature === feature.id && (
+                        <div className="w-2 h-2 rounded-full bg-white"></div>
+                      )}
                     </div>
-                    {feature.isEnabled && (
-                      <div className="mt-1 text-xs text-blue-300">
-                        활성화됨
-                      </div>
-                    )}
-                  </button>
+                    <span className={`text-sm font-medium ${
+                      selectedFeature === feature.id ? 'text-blue-200' : 'text-slate-300'
+                    }`}>
+                      {feature.name}
+                    </span>
+                  </label>
                 ))}
               </CardContent>
             </Card>

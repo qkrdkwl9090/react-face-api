@@ -4,6 +4,7 @@ import type { FaceDetectionResult } from '@/shared/lib/face-api';
 
 interface UseFaceResultsReturn {
   results: FaceDetectionResult[];
+  latestResults: FaceDetectionResult[];
   detectedCount: number;
   latestEmotion: any | null;
   latestAgeGender: any | null;
@@ -31,6 +32,7 @@ export function useFaceResults(): UseFaceResultsReturn {
 
   return {
     results,
+    latestResults: results,
     detectedCount,
     latestEmotion,
     latestAgeGender,

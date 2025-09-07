@@ -59,11 +59,21 @@ class FaceDetectionServiceImpl implements FaceDetectionService {
         });
 
         // 얼굴 감지 실행
-        let detections = await faceapi
-          .detectAllFaces(video, detectionOptions)
-          .withFaceLandmarks()
-          .withFaceExpressions()
-          .withAgeAndGender();
+        let detections;
+        if (options.extractDescriptor) {
+          detections = await faceapi
+            .detectAllFaces(video, detectionOptions)
+            .withFaceLandmarks()
+            .withFaceExpressions()
+            .withAgeAndGender()
+            .withFaceDescriptors();
+        } else {
+          detections = await faceapi
+            .detectAllFaces(video, detectionOptions)
+            .withFaceLandmarks()
+            .withFaceExpressions()
+            .withAgeAndGender();
+        }
 
         this.stats.totalFrames++;
 
@@ -77,7 +87,7 @@ class FaceDetectionServiceImpl implements FaceDetectionService {
           });
 
           // 결과 데이터 업데이트
-          this.latestResults = resizedDetections.map(detection => ({
+          this.latestResults = resizedDetections.map((detection: any) => ({
             detection: detection.detection,
             landmarks: detection.landmarks,
             expressions: detection.expressions,
@@ -86,7 +96,7 @@ class FaceDetectionServiceImpl implements FaceDetectionService {
               gender: detection.gender,
               genderProbability: detection.genderProbability
             } : undefined,
-            descriptor: undefined
+            descriptor: detection.descriptor || undefined
           }));
 
           // 콜백 호출
@@ -195,7 +205,8 @@ class FaceDetectionServiceImpl implements FaceDetectionService {
     return faceapi.nets.ssdMobilenetv1.isLoaded &&
            faceapi.nets.faceLandmark68Net.isLoaded &&
            faceapi.nets.faceExpressionNet.isLoaded &&
-           faceapi.nets.ageGenderNet.isLoaded;
+           faceapi.nets.ageGenderNet.isLoaded &&
+           faceapi.nets.faceRecognitionNet.isLoaded;
   }
 
   getStats(): DetectionStats {

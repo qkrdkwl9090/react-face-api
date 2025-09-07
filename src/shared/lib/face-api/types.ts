@@ -53,6 +53,32 @@ export interface FaceDetectionResult {
   descriptor?: Float32Array;
 }
 
+export interface RegisteredFace {
+  id: string;
+  name: string;
+  descriptor: Float32Array;
+  createdAt: Date;
+}
+
+export interface FaceMatch {
+  registeredFace: RegisteredFace;
+  distance: number;
+  confidence: number;
+}
+
+export interface FaceRecognitionOptions {
+  threshold: number; // 매칭 임계값 (기본값: 0.6)
+  maxResults: number; // 최대 매칭 결과 수
+}
+
+export interface FaceRecognitionService {
+  registerFace: (name: string, descriptor: Float32Array) => string;
+  deleteFace: (faceId: string) => boolean;
+  findMatches: (descriptor: Float32Array, options?: Partial<FaceRecognitionOptions>) => FaceMatch[];
+  getAllRegisteredFaces: () => RegisteredFace[];
+  clearAllFaces: () => void;
+}
+
 export interface FaceDetectionService {
   startDetection: (
     video: HTMLVideoElement,
